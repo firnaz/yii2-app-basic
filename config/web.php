@@ -3,6 +3,22 @@
 $params = require __DIR__ . '/params.php';
 $db = require __DIR__ . '/db.php';
 
+if (file_exists(__DIR__ . '/db-local.php')) {
+    $dblocal = require __DIR__ . '/db-local.php';
+    $db = yii\helpers\ArrayHelper::merge(
+        $db,
+        $dblocal
+    );
+}
+
+if (file_exists(__DIR__ . '/params-local.php')) {
+    $paramslocal = require __DIR__ . '/params-local.php';
+    $params = yii\helpers\ArrayHelper::merge(
+        $params,
+        $paramslocal
+    );
+}
+
 $config = [
     'id' => 'basic',
     'basePath' => dirname(__DIR__),
@@ -43,14 +59,12 @@ $config = [
             ],
         ],
         'db' => $db,
-        /*
         'urlManager' => [
             'enablePrettyUrl' => true,
             'showScriptName' => false,
             'rules' => [
             ],
         ],
-        */
     ],
     'params' => $params,
 ];
@@ -70,6 +84,14 @@ if (YII_ENV_DEV) {
         // uncomment the following to add your IP if you are not connecting from localhost.
         //'allowedIPs' => ['127.0.0.1', '::1'],
     ];
+}
+
+if (file_exists(__DIR__ . '/web-local.php')) {
+    $configlocal = require __DIR__ . '/web-local.php';
+    $config = yii\helpers\ArrayHelper::merge(
+        $config,
+        $configlocal
+    );
 }
 
 return $config;

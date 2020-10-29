@@ -3,6 +3,22 @@
 $params = require __DIR__ . '/params.php';
 $db = require __DIR__ . '/db.php';
 
+if (file_exists(__DIR__ . '/db-local.php')) {
+    $dblocal = require __DIR__ . '/db-local.php';
+    $db = yii\helpers\ArrayHelper::merge(
+        $db,
+        $dblocal
+    );
+}
+
+if (file_exists(__DIR__ . '/params-local.php')) {
+    $paramslocal = require __DIR__ . '/params-local.php';
+    $params = yii\helpers\ArrayHelper::merge(
+        $params,
+        $paramslocal
+    );
+}
+
 $config = [
     'id' => 'basic-console',
     'basePath' => dirname(__DIR__),
@@ -43,6 +59,14 @@ if (YII_ENV_DEV) {
     $config['modules']['gii'] = [
         'class' => 'yii\gii\Module',
     ];
+}
+
+if (file_exists(__DIR__ . '/console-local.php')) {
+    $configlocal = require __DIR__ . '/console-local.php';
+    $config = yii\helpers\ArrayHelper::merge(
+        $config,
+        $configlocal
+    );
 }
 
 return $config;
