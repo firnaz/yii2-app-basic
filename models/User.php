@@ -2,38 +2,118 @@
 
 namespace app\models;
 
-class User extends \yii\base\BaseObject implements \yii\web\IdentityInterface
+use Yii;
+
+/**
+ * This is the model class for table "user".
+ *
+ * @property int $id
+ * @property string $username
+ * @property string $auth_key
+ * @property string $password_hash
+ * @property string|null $password_reset_token
+ * @property string $access_token
+ * @property string|null $type
+ * @property int $status
+ * @property int $created_at
+ * @property int $updated_at
+ */
+class User extends \yii\db\ActiveRecord implements \yii\web\IdentityInterface
 {
-    public $id;
-    public $username;
+    const STATUS_ACTIVE = 10;
+    const STATUS_DISABLED = 20;
+
     public $password;
-    public $authKey;
-    public $accessToken;
+    public $password_repeat;
 
-    private static $users = [
-        '100' => [
-            'id' => '100',
-            'username' => 'admin',
-            'password' => 'admin',
-            'authKey' => 'test100key',
-            'accessToken' => '100-token',
-        ],
-        '101' => [
-            'id' => '101',
-            'username' => 'demo',
-            'password' => 'demo',
-            'authKey' => 'test101key',
-            'accessToken' => '101-token',
-        ],
-    ];
+    protected $_require_password = false;
 
+    /**
+     * {@inheritdoc}
+     */
+    public static function tableName()
+    {
+        return 'user';
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function rules()
+    {
+        $rules =
+        [
+            [['username', 'password_hash', 'auth_key'], 'required'],
+            [['type', 'password_repeat'], 'string'],
+            [['status', 'created_at', 'updated_at'], 'integer'],
+            [['username', 'password_hash', 'password_reset_token'], 'string', 'max' => 255],
+            [['auth_key'], 'string', 'max' => 32],
+            [['password_reset_token'], 'unique'],
+            ['password', 'string', 'min' => 8],
+            ['password_repeat', 'compare', 'compareAttribute' => 'password', 'message' => "Passwords don't match" ],
+        ];
+
+        if ($this->_require_password) {
+            $rules[] = ["password", "required"];
+        }
+
+        return $rules;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function attributeLabels()
+    {
+        return [
+            'id' => 'ID',
+            'username' => 'Username',
+            'password_hash' => 'Password Hash',
+            'password' => 'Password',
+            'password_repeat' => 'Retype Password',
+            'password_reset_token' => 'Password Reset Token',
+            'access_token' => 'Access Token',
+            'type' => 'Type',
+            'status' => 'Active',
+            'created_at' => 'Created At',
+            'updated_at' => 'Updated At',
+        ];
+    }
+
+    public function behaviors()
+    {
+        return [
+            \yii\behaviors\TimestampBehavior::className(),
+        ];
+    }
+
+    public function beforeValidate()
+    {
+        if ($this->isNewRecord) {
+            $this->generateAuthKey();
+        }
+
+        if ($this->status || $this->status == 10) {
+            $this->status = self::STATUS_ACTIVE;
+        } else {
+            $this->status = self::STATUS_DISABLED;
+        }
+
+        if ($this->password) {
+            $this->setPassword($this->password);
+        }
+
+        return parent::beforeValidate();
+    }
 
     /**
      * {@inheritdoc}
      */
     public static function findIdentity($id)
     {
-        return isset(self::$users[$id]) ? new static(self::$users[$id]) : null;
+        $user = self::findOne($id);
+
+        return $user ? $user : null;
     }
 
     /**
@@ -41,13 +121,15 @@ class User extends \yii\base\BaseObject implements \yii\web\IdentityInterface
      */
     public static function findIdentityByAccessToken($token, $type = null)
     {
-        foreach (self::$users as $user) {
-            if ($user['accessToken'] === $token) {
-                return new static($user);
-            }
+        $query = self::find()->where(["access_token" => $token]);
+
+        if ($type) {
+            $query->andWhere(["type" => $type]);
         }
 
-        return null;
+        $user = $query->one();
+
+        return $user ? $user : null;
     }
 
     /**
@@ -58,13 +140,9 @@ class User extends \yii\base\BaseObject implements \yii\web\IdentityInterface
      */
     public static function findByUsername($username)
     {
-        foreach (self::$users as $user) {
-            if (strcasecmp($user['username'], $username) === 0) {
-                return new static($user);
-            }
-        }
+        $user = self::find()->where(["username" => $username])->one();
 
-        return null;
+        return $user ? $user : null;
     }
 
     /**
@@ -80,15 +158,15 @@ class User extends \yii\base\BaseObject implements \yii\web\IdentityInterface
      */
     public function getAuthKey()
     {
-        return $this->authKey;
+        return $this->auth_key;
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
-    public function validateAuthKey($authKey)
+    public function validateAuthKey($accessToken)
     {
-        return $this->authKey === $authKey;
+        return $this->getAccessToken() === $accessToken;
     }
 
     /**
@@ -99,6 +177,80 @@ class User extends \yii\base\BaseObject implements \yii\web\IdentityInterface
      */
     public function validatePassword($password)
     {
-        return $this->password === $password;
+        return Yii::$app->security->validatePassword($password, $this->password_hash);
+    }
+
+    /**
+     * Generates password hash from password and sets it to the model
+     *
+     * @param string $password
+     */
+    public function setPassword($password)
+    {
+        $this->password_hash = Yii::$app->security->generatePasswordHash($password);
+    }
+
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getAccessToken()
+    {
+        return $this->access_token;
+    }
+
+    /**
+     * Generates "remember me" authentication key
+     */
+    public function generateAuthKey()
+    {
+        $this->auth_key = Yii::$app->security->generateRandomString();
+    }
+
+    /**
+     * Generates new password reset token
+     */
+    public function generatePasswordResetToken()
+    {
+        $this->password_reset_token = Yii::$app->security->generateRandomString() . '_' . time();
+    }
+
+    /**
+     * Removes password reset token
+     */
+    public function removePasswordResetToken()
+    {
+        $this->password_reset_token = null;
+    }
+
+    /**
+     * Get is admin user type
+     */
+    public function getIsAdmin()
+    {
+        return $this->type == "admin";
+    }
+
+    /**
+     * Get user status
+     */
+    public function getStatus()
+    {
+        switch ($this->status) {
+            case self::STATUS_ACTIVE:
+                return true;
+            case self::STATUS_DISABLED:
+                return false;
+        }
+    }
+
+    /**
+     * set _require_password
+     * @param boolean
+     */
+
+    public function setRequiredPassword($value)
+    {
+        $this->_require_password = $value;
     }
 }
