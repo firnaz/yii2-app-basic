@@ -2,11 +2,11 @@
     <a href="https://github.com/yiisoft" target="_blank">
         <img src="https://avatars0.githubusercontent.com/u/993323" height="100px">
     </a>
-    <h1 align="center">Yii 2 Basic Project Template</h1>
+    <h1 align="center">Yii 2 Basic Project Template with User Table</h1>
     <br>
 </p>
 
-Yii 2 Basic Project Template is a skeleton [Yii 2](http://www.yiiframework.com/) application best for
+Yii 2 Basic Project Template with User Table is a skeleton [Yii 2](http://www.yiiframework.com/) application best for
 rapidly creating small projects.
 
 The template contains the basic features including user login/logout and a contact page.
@@ -26,6 +26,7 @@ DIRECTORY STRUCTURE
       config/             contains application configurations
       controllers/        contains Web controller classes
       mail/               contains view files for e-mails
+      migrations/         contains database migration files 
       models/             contains model classes
       runtime/            contains files generated during runtime
       tests/              contains various tests for the basic application
@@ -127,6 +128,14 @@ return [
 - Yii won't create the database for you, this has to be done manually before you can access it.
 - Check and edit the other files in the `config/` directory to customize your application as required.
 - Refer to the README in the `tests` directory for information specific to basic application tests.
+
+### Create user table 
+
+Run the migration
+
+~~~
+php yii migrate
+~~~
 
 
 TESTING
