@@ -2,11 +2,11 @@
     <a href="https://github.com/yiisoft" target="_blank">
         <img src="https://avatars0.githubusercontent.com/u/993323" height="100px">
     </a>
-    <h1 align="center">Yii 2 Basic Project Template with User Table</h1>
+    <h1 align="center">Yii 2 Basic Project Template with Basic User Table</h1>
     <br>
 </p>
 
-Yii 2 Basic Project Template with User Table is a skeleton [Yii 2](http://www.yiiframework.com/) application best for
+Yii 2 Basic Project Template with Basic User Table is a skeleton [Yii 2](http://www.yiiframework.com/) application best for
 rapidly creating small projects.
 
 The template contains the basic features including user login/logout and a contact page.
