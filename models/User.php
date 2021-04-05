@@ -164,9 +164,9 @@ class User extends \yii\db\ActiveRecord implements \yii\web\IdentityInterface
     /**
      * @inheritdoc
      */
-    public function validateAuthKey($accessToken)
+    public function validateAuthKey($authKey)
     {
-        return $this->getAccessToken() === $accessToken;
+        return $this->getAuthKey() === $authKey;
     }
 
     /**
